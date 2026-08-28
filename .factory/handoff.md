@@ -70,9 +70,32 @@ cargo package --allow-dirty
 
 ## Deployment and live verification
 
-Static deployment uses `/opt/fleet/lib/deploy-static.sh clean-env-runner dist/site`.
-The final live deployment URL, cache/header evidence, and post-deploy identity check are
-recorded below after the deployment step completes.
+Deployed `dist/site` on 2026-08-28 UTC using:
+
+```sh
+/opt/fleet/lib/deploy-static.sh clean-env-runner dist/site
+```
+
+Azure Static Web Apps deployment `c9a2049d-d1af-42b8-ad0c-0834246a283e` completed
+successfully. The live URL is <https://clean-env-runner.sociobot.in>.
+
+- `/opt/fleet/lib/verify-url.sh https://clean-env-runner.sociobot.in <temp-dir>` passed:
+  HTTP 200, 796 ms load, zero console/page errors, title/lang, one h1, main landmark, and
+  complete image/button labeling.
+- Live `index.html` SHA-256 is
+  `3c3892179a53bae765c4ae3bd4f059961106b56b76646c4402b3215812796eaf`, exactly matching
+  `dist/site/index.html`.
+- Live `/assets/main-FwBceyTC.js` returns
+  `Cache-Control: public, max-age=31536000, immutable`; `/sw.js` and `/privacy/` return
+  `Cache-Control: no-cache, must-revalidate`.
+- Live asset, service-worker, and privacy responses send the restrictive same-origin CSP
+  and Permissions-Policy. HSTS, `Referrer-Policy: same-origin`, and `nosniff` are also
+  present.
+- Live mobile Chromium visits to `/`, `/privacy/`, and `/terms/` had zero axe
+  serious/critical violations and zero console/page errors. Runtime requests stayed
+  entirely on `https://clean-env-runner.sociobot.in`; there are no third-party requests.
+- The live service worker created `clean-env-runner-04dc74f99008`; an offline reload
+  retained the expected guide h1.
 
 ## Known gaps
 
