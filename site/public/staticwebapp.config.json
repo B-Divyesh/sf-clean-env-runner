@@ -35,7 +35,25 @@
       }
     },
     {
-      "route": "/*",
+      "route": "/",
+      "headers": {
+        "cache-control": "no-cache, must-revalidate"
+      }
+    },
+    {
+      "route": "/index.html",
+      "headers": {
+        "cache-control": "no-cache, must-revalidate"
+      }
+    },
+    {
+      "route": "/privacy/*",
+      "headers": {
+        "cache-control": "no-cache, must-revalidate"
+      }
+    },
+    {
+      "route": "/terms/*",
       "headers": {
         "cache-control": "no-cache, must-revalidate"
       }

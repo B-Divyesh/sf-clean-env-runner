@@ -22,7 +22,20 @@
 /sw.js
   Cache-Control: no-cache, must-revalidate
 
-/*
+# Keep cache rules disjoint. Some static hosts merge every matching block, so a
+# trailing catch-all Cache-Control would overwrite the immutable asset rule.
+/
   Cache-Control: no-cache, must-revalidate
+
+/index.html
+  Cache-Control: no-cache, must-revalidate
+
+/privacy/*
+  Cache-Control: no-cache, must-revalidate
+
+/terms/*
+  Cache-Control: no-cache, must-revalidate
+
+/*
   Content-Security-Policy: default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; font-src 'self'; worker-src 'self'; manifest-src 'self'; upgrade-insecure-requests
   Permissions-Policy: accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), picture-in-picture=(), publickey-credentials-get=(), screen-wake-lock=(), usb=(), web-share=(), xr-spatial-tracking=(), clipboard-read=(), clipboard-write=(self)

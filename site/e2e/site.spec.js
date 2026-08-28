@@ -40,6 +40,18 @@ test('mobile layout does not overflow the viewport', async ({ page }) => {
   await expect(page.getByLabel('clean-env.toml')).toBeVisible();
 });
 
+test('the versioned service worker keeps the guide available offline', async ({ page, context }) => {
+  await page.goto('/');
+  await page.evaluate(async () => {
+    const registration = await navigator.serviceWorker.ready;
+    if (!registration.active) throw new Error('service worker did not activate');
+  });
+  await context.setOffline(true);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Your shell knows too much.');
+  await context.setOffline(false);
+});
+
 test('privacy and terms are real accessible policy routes', async ({ page }) => {
   for (const route of ['/privacy/', '/terms/']) {
     const errors = [];

@@ -21,6 +21,9 @@ for (const phrase of ['.clean-env/receipts/', 'working directory', 'timestamps',
 const headers = await text('_headers');
 assert.match(headers, /\/assets\/\*[\s\S]*?Cache-Control: public, max-age=31536000, immutable/);
 assert.match(headers, /\/sw\.js[\s\S]*?Cache-Control: no-cache, must-revalidate/);
+assert.match(headers, /\/privacy\/\*[\s\S]*?Cache-Control: no-cache, must-revalidate/);
+assert.match(headers, /\/terms\/\*[\s\S]*?Cache-Control: no-cache, must-revalidate/);
+assert.doesNotMatch(headers, /^\/\*\s*\n(?:\s*#.*\n)*\s*Cache-Control:/m, 'global browser policies must not override immutable asset caching');
 assert.match(headers, /\/\*[\s\S]*?Content-Security-Policy: default-src 'self';/);
 assert.match(headers, /Permissions-Policy: /);
 for (const feature of ['camera', 'microphone', 'geolocation']) assert.match(headers, new RegExp(`${feature}=\\(\\)`));
@@ -30,5 +33,13 @@ assert.equal(azure.globalHeaders['content-security-policy'].startsWith("default-
 assert.match(azure.globalHeaders['permissions-policy'], /camera=\(\).*microphone=\(\).*geolocation=\(\)|camera=\(\).*geolocation=\(\).*microphone=\(\)/);
 assert.deepEqual(azure.routes[0], { route: '/assets/*', headers: { 'cache-control': 'public, max-age=31536000, immutable' } });
 assert.deepEqual(azure.routes.find((route) => route.route === '/sw.js'), { route: '/sw.js', headers: { 'cache-control': 'no-cache, must-revalidate' } });
+assert.equal(azure.routes.some((route) => route.route === '/*'), false, 'a catch-all cache route can override immutable asset caching');
+for (const route of ['/', '/index.html', '/privacy/*', '/terms/*']) {
+  assert.deepEqual(azure.routes.find((entry) => entry.route === route), { route, headers: { 'cache-control': 'no-cache, must-revalidate' } });
+}
+
+const serviceWorker = await text('sw.js');
+assert.match(serviceWorker, /const CACHE = 'clean-env-runner-[a-f0-9]{12}';/);
+assert.doesNotMatch(serviceWorker, /clean-env-runner-v1/);
 
 console.log('Release artifact policy routes and deployment headers verified.');
