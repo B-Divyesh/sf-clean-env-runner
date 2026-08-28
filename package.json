@@ -1,0 +1,20 @@
+{
+  "name": "clean-env-runner-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --config site/vite.config.js",
+    "build:cli": "cargo build --release",
+    "build:site": "vite build --config site/vite.config.js && node scripts/finalize-site.mjs",
+    "build": "npm run build:cli && npm run build:site && node scripts/stage-cli.mjs",
+    "test": "cargo test && node --test site/tests/*.test.mjs",
+    "test:e2e": "playwright test",
+    "preview": "vite preview --config site/vite.config.js"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.10.2",
+    "@playwright/test": "1.58.2",
+    "vite": "6.4.3"
+  }
+}

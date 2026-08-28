@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f2efe6">
+    <meta name="description" content="Run local commands with only the environment variables you explicitly allow.">
+    <title>Clean Env Runner — No ambient credentials</title>
+    <script type="module" src="/src/main.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to main content</a>
+    <div class="offline" id="offline" role="status" hidden>
+      Offline edition — the guide and proofreader still work locally.
+    </div>
+    <header class="masthead">
+      <a class="wordmark" href="#top" aria-label="Clean Env Runner home">
+        <span aria-hidden="true">CER—01</span>
+        <span>Clean Env Runner</span>
+      </a>
+      <nav aria-label="Primary navigation">
+        <a href="#install">Install</a>
+        <a href="#proofreader">Proofreader</a>
+        <a href="#reference">Reference</a>
+      </nav>
+      <p class="issue">Vol. 01 / Free &amp; local</p>
+    </header>
+
+    <main id="main">
+      <article id="top" class="hero" aria-labelledby="hero-title">
+        <p class="kicker"><span>Security brief № 01</span><span>Linux · macOS · Windows</span></p>
+        <h1 id="hero-title">Your shell knows too much.</h1>
+        <div class="hero-grid">
+          <p class="dek">Run commands with an explicit environment. Review every variable in; prove every other variable stayed out.</p>
+          <div class="hero-action" id="install">
+            <p class="eyebrow">Install from source</p>
+            <div class="command-line">
+              <code>cargo install clean-env-runner</code>
+              <button class="copy" type="button" data-copy="cargo install clean-env-runner" aria-describedby="copy-status">Copy</button>
+            </div>
+            <p id="copy-status" class="status" aria-live="polite">Rust 1.85+ · single binary · no telemetry</p>
+          </div>
+        </div>
+      </article>
+
+      <section class="plate" aria-labelledby="boundary-title">
+        <figure>
+          <img src="/environment-proof.webp" width="1280" height="853" fetchpriority="high" alt="A cream manifest isolated within a red proof mark on a black letterpress bed.">
+          <figcaption><span>Plate A.</span> The manifest is the boundary; the receipt is the proof.</figcaption>
+        </figure>
+        <div class="plate-copy">
+          <p class="section-number">01 / The boundary</p>
+          <h2 id="boundary-title">Start from nothing.</h2>
+          <p>Most local runs inherit dozens of invisible choices: cloud keys, proxy settings, feature flags, language paths. Clean Env Runner clears the slate before the command starts.</p>
+          <ol class="sequence">
+            <li><strong>Declare</strong><span>Allow only named variables.</span></li>
+            <li><strong>Preview</strong><span>See added, changed, and missing inputs.</span></li>
+            <li><strong>Run</strong><span>Execute inside the scrubbed process.</span></li>
+            <li><strong>Prove</strong><span>Keep a receipt with values removed.</span></li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="proofreader" id="proofreader" aria-labelledby="proofreader-title">
+        <header class="section-head">
+          <div>
+            <p class="section-number">02 / Desk proof</p>
+            <h2 id="proofreader-title">Audit a manifest before it runs.</h2>
+          </div>
+          <p>This browser-only proofreader never uploads, stores, or executes your text. The CLI remains the authoritative validator.</p>
+        </header>
+        <div class="preset-bar" aria-label="Manifest examples">
+          <span>Load edition:</span>
+          <button type="button" class="preset active" data-preset="safe" aria-pressed="true">Safe example</button>
+          <button type="button" class="preset" data-preset="empty" aria-pressed="false">Empty boundary</button>
+          <button type="button" class="preset" data-preset="broken" aria-pressed="false">Broken secret</button>
+        </div>
+        <div class="workbench">
+          <div class="editor-pane">
+            <label for="manifest">clean-env.toml</label>
+            <textarea id="manifest" spellcheck="false" autocapitalize="off" aria-describedby="manifest-help"></textarea>
+            <p id="manifest-help">Edit the text. The audit ledger updates immediately.</p>
+          </div>
+          <div class="audit-pane" tabindex="0" aria-label="Manifest audit result" aria-live="polite" aria-atomic="true">
+            <div class="audit-head">
+              <p>Audit ledger</p>
+              <span id="audit-mark" class="audit-mark">Reviewing</span>
+            </div>
+            <div id="audit-output"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="reference" id="reference" aria-labelledby="reference-title">
+        <div class="reference-intro">
+          <p class="section-number">03 / Field reference</p>
+          <h2 id="reference-title">A small contract on purpose.</h2>
+          <p>Four commands cover the lifecycle. Every reporting command can emit JSON, and every failure has a stable exit code.</p>
+        </div>
+        <dl class="command-index">
+          <div><dt><code>clean-env init</code></dt><dd>Write a commented starter manifest without overwriting an existing one.</dd></div>
+          <div><dt><code>clean-env preview [--json]</code></dt><dd>Show declared values, redactions, missing inputs, and the ambient removal count.</dd></div>
+          <div><dt><code>clean-env check [--json]</code></dt><dd>Validate the manifest and fail when a required source is unavailable.</dd></div>
+          <div><dt><code>clean-env run -- command</code></dt><dd>Clear the environment, run the child, preserve its exit code, and write a scrubbed receipt.</dd></div>
+        </dl>
+      </section>
+
+      <section class="manifest-anatomy" aria-labelledby="anatomy-title">
+        <div>
+          <p class="section-number">04 / Manifest anatomy</p>
+          <h2 id="anatomy-title">Values have provenance.</h2>
+        </div>
+        <div class="anatomy-grid">
+          <div><code>inherit = true</code><p>Copy the same-named parent variable.</p></div>
+          <div><code>from_env = "NAME"</code><p>Map an injected variable to a child name.</p></div>
+          <div><code>value = "test"</code><p>Declare a reviewable, non-secret literal.</p></div>
+          <div><code>secret = true</code><p>Redact its value everywhere Clean Env Runner reports.</p></div>
+        </div>
+        <aside class="warning">
+          <span aria-hidden="true">!</span>
+          <p><strong>Literal secrets are refused.</strong> Ask your OS keychain tool to inject a variable, then reference its name. Clean Env Runner stores no credentials.</p>
+        </aside>
+      </section>
+    </main>
+
+    <footer>
+      <p><strong>Clean Env Runner 0.1.0</strong><br>MIT licensed. Local-first. No cookies, analytics, accounts, or network calls.</p>
+      <div><a href="https://github.com/B-Divyesh/sf-clean-env-runner">Source &amp; README</a><a href="#top">Back to masthead ↑</a></div>
+    </footer>
+  </body>
+</html>
