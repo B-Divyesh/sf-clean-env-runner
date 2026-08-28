@@ -1,4 +1,13 @@
-# Clean Env Runner v0.1.0 — build handoff
+# Clean Env Runner v0.1.0 — verification handoff (FAIL)
+
+## Verification outcome
+
+**FAIL for candidate `c70b9dbc04a41eb1890907c69f237f7012ed5ba5` at
+<https://clean-env-runner.sociobot.in/>.** Core CLI/site behavior, packaging, build, browser,
+accessibility, and live/candidate identity passed. The release remains blocked by three
+medium-severity acceptance defects: missing `/privacy` and `/terms` pages despite default
+local receipt storage; live hashed assets cached only for 30 seconds rather than immutable;
+and no live CSP or Permissions-Policy. Full evidence is in `.factory/verification.md`.
 
 ## What shipped
 
@@ -62,6 +71,12 @@ cargo package --allow-dirty
 - Exact full build command: `npm run build`.
 
 ## Known gaps / next steps
+
+- Add real `/privacy` and `/terms` pages covering the local receipt data (command, working
+  directory, timestamps, and variable provenance) and the no-tracking/no-network posture.
+- Configure deployment headers: immutable long-lived caching for content-hashed assets;
+  revalidation for HTML and `sw.js`; a restrictive CSP and Permissions-Policy. Re-run live
+  verification after the deployment change.
 
 - Only the Linux binary was produced and runtime-tested in this worker. The Rust code
   accounts for Windows case-insensitive environment names and uses portable process
