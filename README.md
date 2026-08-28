@@ -100,8 +100,15 @@ cargo package --allow-dirty
 ```
 
 Run the docs locally with `npm run dev`. The site is static, stores nothing, and has
-no analytics, cookies, third-party scripts, or remote fonts. Deployment publishes
-`dist/site` at <https://clean-env-runner.sociobot.in>.
+no analytics, cookies, third-party scripts, or remote fonts. Read the published
+[privacy policy](https://clean-env-runner.sociobot.in/privacy/) and
+[terms](https://clean-env-runner.sociobot.in/terms/) for the local receipt and site-cache
+details. Deployment publishes `dist/site` at <https://clean-env-runner.sociobot.in>.
+
+The deployment artifact includes both portable `_headers` and Azure Static Web Apps
+`staticwebapp.config.json` policy files. Hashed assets are cached for a year with
+`immutable`; HTML and `sw.js` revalidate for prompt updates; the site sends a
+same-origin CSP and restrictive Permissions-Policy.
 
 ## Project status
 

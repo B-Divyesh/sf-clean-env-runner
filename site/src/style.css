@@ -126,6 +126,15 @@ figcaption span { color: var(--ink); font-weight: 700; }
 .warning > span { display: grid; place-items: center; background: var(--ink); color: var(--stock); font: 700 20px/1 var(--mono); }
 .warning p { margin: 0; padding: 18px 20px; }
 
+.policy-page { max-width: 920px; padding-top: 44px; padding-bottom: 88px; }
+.policy-page h1 { padding-bottom: 32px; font-size: clamp(3.25rem, 7vw, 6.4rem); }
+.policy-lede { max-width: 62ch; margin: 0 0 56px; font-size: clamp(1.25rem, 2vw, 1.7rem); line-height: 1.35; }
+.policy-page section { max-width: 72ch; padding: 28px 0; border-top: 1px solid var(--ink); }
+.policy-page section:last-child { border-bottom: 1px solid var(--ink); }
+.policy-page h2 { font-size: clamp(2rem, 4vw, 3.25rem); }
+.policy-page p { overflow-wrap: anywhere; }
+.policy-page code { font: .9em var(--mono); }
+
 footer { max-width: 1440px; margin: 0 auto; padding: 32px; border-top: 1px solid var(--ink); display: flex; justify-content: space-between; gap: 32px; color: var(--muted); font: 12px/1.6 var(--mono); }
 footer p { margin: 0; }
 footer strong { color: var(--ink); }
@@ -157,6 +166,7 @@ footer > div { display: flex; gap: 28px; align-items: center; }
   .kicker span:last-child { display: none; }
   h1 { padding: 28px 0 34px; }
   .plate, .proofreader, .reference, .manifest-anatomy { padding: 56px 0; }
+  .policy-page { padding-top: 28px; padding-bottom: 56px; }
   .plate { gap: 36px; }
   .plate-copy { display: block; }
   .plate-copy h2 { margin: 12px 0 20px; }

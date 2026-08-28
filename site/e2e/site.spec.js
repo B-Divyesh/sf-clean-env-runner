@@ -39,3 +39,20 @@ test('mobile layout does not overflow the viewport', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await expect(page.getByLabel('clean-env.toml')).toBeVisible();
 });
+
+test('privacy and terms are real accessible policy routes', async ({ page }) => {
+  for (const route of ['/privacy/', '/terms/']) {
+    const errors = [];
+    page.on('console', (message) => {
+      if (message.type() === 'error') errors.push(message.text());
+    });
+    await page.goto(route);
+    await expect(page.locator('main')).toBeVisible();
+    await expect(page.locator('h1')).toHaveCount(1);
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+    await expect(page.getByRole('link', { name: 'Skip to main content' })).toBeVisible();
+    const results = await new AxeBuilder({ page }).analyze();
+    expect(results.violations.filter((violation) => ['serious', 'critical'].includes(violation.impact))).toEqual([]);
+    expect(errors).toEqual([]);
+  }
+});

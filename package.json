@@ -10,6 +10,7 @@
     "build": "npm run build:cli && npm run build:site && node scripts/stage-cli.mjs",
     "test": "cargo test && node --test site/tests/*.test.mjs",
     "test:e2e": "playwright test",
+    "test:release": "npm run build && node scripts/verify-release.mjs",
     "preview": "vite preview --config site/vite.config.js"
   },
   "devDependencies": {
