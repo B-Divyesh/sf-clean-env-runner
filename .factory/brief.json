@@ -3,10 +3,28 @@
   "title": "Clean Env Runner",
   "territory": "devtools-data",
   "user": "Developers testing workflows locally who need to reproduce a run with an explicit, reviewable environment instead of accidentally inheriting credentials and settings from their shell.",
+  "evidence": [
+    {
+      "url": "https://hn.algolia.com/api/v1/items/47616250",
+      "date": "2026-04-02",
+      "quote_or_summary": "A developer describing a modern terminal/IDE/agent setup asks what others use and highlights debugging across several local tools."
+    },
+    {
+      "url": "https://github.com/nektos/act/issues/6159",
+      "date": "2026-08-13",
+      "quote_or_summary": "Act users request host execution without inheriting every parent-process environment variable so local workflow tests do not expose unrelated credentials and session state."
+    }
+  ],
+  "recurrence": "The request comes from both day-to-day multi-tool development and local Actions emulation; accidental ambient configuration makes a test irreproducible and can leak credentials.",
+  "current_workaround": "Open a fresh shell, hand-write env -i commands, maintain several .env files, or hope that CI behaves like a developer laptop.",
+  "incumbents_and_gap": "direnv, dotenvx, Act, and 1Password inject variables, but they do not make an allowlisted environment and its provenance a repeatable test artifact across arbitrary commands.",
   "smallest_useful_product": "A CLI wrapper with declarative allowlists, secret-name placeholders, environment diff previews, and a scrubbed run receipt.",
   "success_measure": "At least 80% of pilot runs reproduce after a clean-shell restart, with no variable outside the manifest visible to the child process.",
   "artifact_class": "cli",
   "monetization": "free",
   "constraints": "Never log secret values; use OS keychain references only; account for Windows, macOS, and Linux process-environment differences.",
+  "est_build_effort": "S",
+  "why_distinct": "The product is an explicit environment boundary and receipt, not another dotenv loader.",
+  "confidence": 4,
   "state": "RESEARCHED"
 }

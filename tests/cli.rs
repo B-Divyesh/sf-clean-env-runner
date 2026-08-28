@@ -83,3 +83,25 @@ fn child_exit_code_is_preserved() {
         .unwrap();
     assert_eq!(output.status.code(), Some(23));
 }
+
+#[test]
+fn bare_executable_is_resolved_from_the_declared_path() {
+    let directory = tempfile::tempdir().unwrap();
+    let manifest = directory.path().join("clean-env.toml");
+    fs::write(
+        &manifest,
+        "version=1\n[env.PATH]\nvalue=\"/usr/bin:/bin\"\n[env.PROOF]\nvalue=\"clean\"\n",
+    )
+    .unwrap();
+    let output = Command::new(binary())
+        .current_dir(directory.path())
+        .args(["run", "--no-receipt", "--manifest"])
+        .arg(manifest)
+        .args(["--", "env"])
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.contains("PROOF=clean"));
+    assert!(!stdout.contains("HOME="));
+}

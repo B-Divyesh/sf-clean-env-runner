@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#f2efe6">
     <meta name="description" content="Run local commands with only the environment variables you explicitly allow.">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <title>Clean Env Runner — No ambient credentials</title>
     <script type="module" src="/src/main.js"></script>
   </head>
@@ -35,8 +36,8 @@
           <div class="hero-action" id="install">
             <p class="eyebrow">Install from source</p>
             <div class="command-line">
-              <code>cargo install clean-env-runner</code>
-              <button class="copy" type="button" data-copy="cargo install clean-env-runner" aria-describedby="copy-status">Copy</button>
+              <code tabindex="0" aria-label="Install command">cargo install --git https://github.com/B-Divyesh/sf-clean-env-runner</code>
+              <button class="copy" type="button" data-copy="cargo install --git https://github.com/B-Divyesh/sf-clean-env-runner" aria-describedby="copy-status">Copy</button>
             </div>
             <p id="copy-status" class="status" aria-live="polite">Rust 1.85+ · single binary · no telemetry</p>
           </div>
@@ -45,7 +46,7 @@
 
       <section class="plate" aria-labelledby="boundary-title">
         <figure>
-          <img src="/environment-proof.webp" width="1280" height="853" fetchpriority="high" alt="A cream manifest isolated within a red proof mark on a black letterpress bed.">
+          <img src="/environment-proof.webp" srcset="/environment-proof-mobile.webp 720w, /environment-proof.webp 1280w" sizes="(max-width: 720px) calc(100vw - 40px), (max-width: 920px) calc(100vw - 64px), 66vw" width="1280" height="853" fetchpriority="high" alt="A cream manifest isolated within a red proof mark on a black letterpress bed.">
           <figcaption><span>Plate A.</span> The manifest is the boundary; the receipt is the proof.</figcaption>
         </figure>
         <div class="plate-copy">

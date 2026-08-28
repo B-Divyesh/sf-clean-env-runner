@@ -5,7 +5,7 @@ const html = await readFile(new URL('index.html', root), 'utf8');
 const discovered = [...html.matchAll(/(?:src|href)="(\/[^"]+)"/g)]
   .map((match) => match[1])
   .filter((path) => path.startsWith('/assets/'));
-const assets = ['/', '/index.html', '/environment-proof.webp', ...discovered];
+const assets = ['/', '/index.html', '/environment-proof.webp', '/environment-proof-mobile.webp', '/favicon.svg', '/robots.txt', ...discovered];
 const serviceWorker = `const CACHE = 'clean-env-runner-v1';
 const SHELL = ${JSON.stringify(assets)};
 self.addEventListener('install', (event) => event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)).then(() => self.skipWaiting())));

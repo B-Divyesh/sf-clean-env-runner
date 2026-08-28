@@ -49,7 +49,8 @@ scrolling become instant.
 
 - `site/public/environment-proof.webp`: original, AI-generated editorial still life
   commissioned for this product with `/opt/fleet/lib/gen-image.sh` (factory-image),
-  then resized and encoded locally as WebP. Prompt: “top-down monochrome editorial
+  then resized and encoded locally as WebP, including a 720 px responsive derivative.
+  Prompt: “top-down monochrome editorial
   photograph for a technical newspaper, a single cream paper manifest on a black
   letterpress bed, narrow columns of abstract code-like marks with no legible words,
   one vermilion proofreader stamp marking a clean rectangular boundary, tactile paper
