@@ -1,0 +1,33 @@
+[package]
+name = "clean-env-runner"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+description = "Run commands inside an explicit, reviewable environment boundary"
+license = "MIT"
+repository = "https://github.com/B-Divyesh/sf-clean-env-runner"
+homepage = "https://clean-env-runner.sociobot.in"
+readme = "README.md"
+keywords = ["environment", "cli", "reproducibility", "security"]
+categories = ["command-line-utilities", "development-tools"]
+include = ["src/**", "tests/**", "Cargo.toml", "Cargo.lock", "README.md", "LICENSE", "CHANGELOG.md"]
+
+[[bin]]
+name = "clean-env"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4.5.46", features = ["derive"] }
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.143"
+sha2 = "0.10.9"
+toml = "0.9.5"
+
+[dev-dependencies]
+tempfile = "3.21.0"
+
+[profile.release]
+strip = true
+lto = true
+codegen-units = 1
+panic = "abort"
