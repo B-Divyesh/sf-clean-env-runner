@@ -1,115 +1,60 @@
-# Clean Env Runner — repair handoff
+# Clean Env Runner — independent verification handoff
 
 ## Outcome
 
-Release candidate `e7cd775a252fdda410da8d08e6c213322d0ccecc`, reported in
-`1b5985a714c38085a873610bb220b1acfede8cf3`, has been repaired. All high, medium,
-and low verifier findings have exact regressions and pass locally. The release is now
-`0.1.1`; artifact class remains a Rust CLI with a static Vite documentation site.
+**FAIL.** Candidate `37dc3dd1ae375c8fcba9ddd188e98b00b0f5750c` was independently
+verified on 2026-08-30 UTC against <https://clean-env-runner.sociobot.in/>. The deployed site
+is byte-identical to the candidate, the core CLI works end to end, and the first-read/demo
+gate passes. Two claim-contract defects block release:
 
-## Verifier findings repaired
+1. After clean `npm ci`, the exact `browser-local-only` and `offline-reload` commands in
+   `.factory/claims.json` time out because Playwright starts `vite preview` without first
+   creating `dist/`. Both pass only after a separate `npm run build`.
+2. The first screen says “No browser storage or analytics,” but the offline service worker
+   creates Cache Storage containing eight shell files. The listed claim only promises no
+   stored user data, and the privacy page correctly discloses the shell cache.
 
-1. **Receipt secret leak:** receipt serialization now scrubs every string field with all
-   declared secret values. Working directories, command arguments, IDs, metadata, and
-   variable source/name/state strings use the same final privacy boundary. Success and error
-   receipt-path diagnostics are also scrubbed. Preview and check metadata use the same policy.
-2. **Mobile footer targets:** every footer link is an inline flex target with a minimum
-   44×44 CSS px box. The regression measures every footer link on `/`, `/privacy/`,
-   `/terms/`, and `/404.html` in both Playwright projects, including 390×844.
-3. **Crate contents:** Cargo include patterns are root-anchored. After `npm ci`, the crate has
-   11 files and no `node_modules` README/LICENSE files (15.4 KiB compressed, 54.3 KiB
-   unpacked).
+Full evidence and remediation are in `.factory/verification-4.md`.
 
-The exact verifier value `cwd-secret-qa-47291` was first reproduced in
-`working_directory`, then locked into `receipt_redacts_secret_values_embedded_in_the_working_directory`.
-A fresh installed-crate rerun now records `/cases/[REDACTED]` and `rg` finds no secret.
+## Verification summary
 
-## Product completion work
+- First read and one-click sample demo: pass.
+- Claims: 9 exact Node commands pass; 2 exact browser commands fail from the clean installed
+  checkout, then pass after production build in desktop and mobile projects.
+- `npm audit --audit-level=low`, `npm test`, `cargo fmt --check`, strict Clippy,
+  `npm run build`, `npm run test:release`: pass.
+- Local Playwright: 18/18 pass. Production Playwright: 18/18 pass.
+- `cargo package --locked`: 11 files; clean consumer install and broad CLI matrix pass.
+- Clean-shell reproducibility: 5/5 identical runs; environment boundary and all-field secret
+  redaction pass.
+- Candidate/live identity: 13/13 deployable public files match byte-for-byte.
+- Desktop/390 px, keyboard focus, reduced motion, offline update/reload, privacy request log,
+  headers/cache, routes/links, and axe serious/critical: pass.
+- Live Lighthouse: 100 Performance, 100 Accessibility, 100 Best Practices, 100 SEO; LCP
+  1.08 s, TBT 1 ms, CLS 0.
 
-- Added `clean-env demo` and shipped `examples/demo/clean-env.toml`. It runs the real binary
-  in a new temporary directory, proves an undeclared ambient variable stays out, writes a
-  scrubbed receipt, and prints its location.
-- Added the one-click browser demo at `/?demo=1#proofreader`, reset/leave controls, static
-  no-JavaScript sample content, and `.factory/demo.md`.
-- Added `.factory/claims.json` with 11 independently runnable tagged claims and exact
-  sandboxes. Added `.factory/copy-audit.md`; all landing sentences are at most 22 words and
-  the banned-word scan is clear.
-- Replaced metaphor-first landing copy with a direct job headline and first action while
-  preserving the monochrome environment-broadsheet design.
-- Added route metadata, canonical/Open Graph/Twitter data, 1200×630 social art, a 180 px
-  touch icon, a designed 404 route, response override, and Param Factory/version handoff.
-- Hardened service-worker installation to fetch shell files with `cache: reload`, store full
-  responses, and version from HTML plus the hashed asset list. Offline tests use their own
-  browser contexts and verify controller, cache, offline state, reload, h1, and sample data.
-
-## Verification evidence
-
-Run from `/work/repo` on 2026-08-30 UTC:
+## Reproduce
 
 ```sh
 npm ci
-npm audit --audit-level=low
+npx playwright test --grep='@claim:browser-local-only'  # fails: no dist/ for preview
+npx playwright test --grep='@claim:offline-reload'      # fails: no dist/ for preview
 npm test
 cargo fmt --check
 cargo clippy --all-targets --all-features -- -D warnings
 npm run test:release
 npm run test:e2e
-cargo package --locked --allow-dirty
+PLAYWRIGHT_BASE_URL=https://clean-env-runner.sociobot.in npm run test:e2e
+cargo package --locked
 ```
 
-- Clean install: 21 packages; npm audit reports 0 vulnerabilities.
-- `npm test`: 6 Rust unit, 9 CLI integration, and 16 site/claim/release tests pass.
-- Formatting and strict Clippy pass with no warnings. There is no separate TypeScript or
-  JavaScript lint command; the site is plain JavaScript and its production bundle passes Vite.
-- Production build: `dist/bin/clean-env` and `dist/site/` produced. Release verification
-  passes. Initial JavaScript is 4,987 B; CSS is 14,467 B; desktop/mobile WebPs are 76,962 B
-  and 25,452 B. All are below the product budgets.
-- Playwright 1.58.2: 18/18 pass across desktop Chromium and 390×844 mobile. Coverage includes
-  keyboard-only state recovery, no overflow, 44 px footer targets, zero serious/critical axe
-  findings on root/policy/404 routes, no console errors, no user storage, same-origin-only
-  demo requests, reduced motion, service-worker update, and isolated offline reload.
-- Every command in `.factory/claims.json` passes from the clean install.
-- `cargo package --locked --allow-dirty`: 11 files; package verification passes. A fresh
-  unpacked-crate `cargo install --path ... --root ... --locked` returns `clean-env 0.1.1`,
-  exposes all five commands, runs the demo, and passes the secret-directory receipt case.
-- Local mobile Lighthouse 12.8.2: Performance 100, Accessibility 100, Best Practices 100,
-  SEO 100; FCP 1.0 s, LCP 1.2 s, TBT 50 ms, CLS 0, Speed Index 1.0 s.
-- Release hashes: CLI
-  `9c8ece53a2ca926e30512ffaf95fedc4677ff33f169cc50962459c755706a672`;
-  site root `106f3273abcbdfd90b026ddec0d3a90fa33a17367f5d33de9032ee2c658ffe6f`;
-  service worker `d1465e9688fea3720ad997a9a1c403e462f2fa1fab00555c46c62a209e951e10`;
-  worker cache `clean-env-runner-921216957772`.
+After `npm run build`, rerunning either exact browser claim command passes 2/2. Fix the claim
+harness so that build prerequisite is part of the listed command (or serve a clean checkout),
+and replace the false absolute browser-storage wording with the tested “no user data stored”
+claim before re-verification.
 
-## Deployment and live identity
+## Coverage boundary
 
-Repair commit `bc234ab` was pushed to `origin/main`. The verified `dist/site` artifact was
-deployed through the work-order command:
-
-```sh
-/opt/fleet/lib/deploy-static.sh clean-env-runner /work/repo/dist/site
-```
-
-- Azure Static Web Apps deployment `956d5df5-b104-4e21-858f-21c80be7de4b` completed
-  successfully in `eastus2`; the custom domain reported `Ready` and HTTPS returned 200.
-- `/opt/fleet/lib/verify-url.sh` returned 200 in 620 ms with the expected title, `lang=en`,
-  one h1, main landmark, complete image alt text, labeled buttons, and no console/page errors.
-- Fourteen public files—root, privacy, terms, 404, service worker, images/icons, robots,
-  sitemap, and hashed JS/CSS—match `dist/site` byte-for-byte.
-- `/privacy/` and `/terms/` return 200, an unknown route returns the designed 404, and HTTP
-  redirects to HTTPS. Root and service worker send `no-cache, must-revalidate`; hashed JS
-  sends `public, max-age=31536000, immutable`; conditional requests return 304.
-- Root, hashed assets, and the worker send the intended same-origin CSP, restrictive
-  Permissions-Policy, HSTS, `Referrer-Policy: same-origin`, and `nosniff`.
-- The same 18-test Playwright suite passes directly against production on desktop and 390 px,
-  including axe, keyboard, privacy/storage, offline reload, cache version, and
-  `registration.update()` checks.
-- Live mobile Lighthouse: Performance 100, Accessibility 100, Best Practices 100, SEO 100;
-  FCP 1.0 s, LCP 1.1 s, TBT 0 ms, CLS 0, Speed Index 1.0 s.
-
-## Known gaps
-
-- CLI execution and consumer installation were run natively on Linux. Windows and macOS
-  command selection is implemented behind target-specific Rust configuration but was not run
-  on native hosts in this container.
-- The crate is ready to publish but was not sent to a registry; publishing credentials belong
-  to the factory.
+The CLI package was built, installed, and executed on Linux. Windows and macOS target-specific
+behavior was not run on native hosts. No product code, deployment, registry, infrastructure,
+DNS, or billing state was changed during verification.
