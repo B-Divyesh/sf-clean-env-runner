@@ -1,0 +1,12 @@
+# Sample manifest used by `clean-env demo`.
+version = 1
+
+[env.CI]
+value = "true"
+
+[env.PROJECT]
+value = "sample-api"
+
+[env.DEPLOY_TOKEN]
+from_env = "CLEAN_ENV_DEMO_TOKEN"
+secret = true

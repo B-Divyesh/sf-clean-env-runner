@@ -1,11 +1,12 @@
 use clap::{Parser, Subcommand};
 use clean_env_runner::{
-    AppError, DEFAULT_MANIFEST, Receipt, STARTER_MANIFEST, default_receipt_path, ensure_complete,
-    load_manifest, receipt_environment, receipt_id, redact_argument, resolve_environment,
-    unix_ms_now, write_receipt,
+    AppError, DEFAULT_MANIFEST, DEMO_MANIFEST, Receipt, STARTER_MANIFEST, default_receipt_path,
+    ensure_complete, load_manifest, receipt_environment, receipt_id, redact_argument,
+    resolve_environment, scrub_preview, unix_ms_now, write_receipt,
 };
 use serde_json::json;
-use std::fs::OpenOptions;
+use std::ffi::OsString;
+use std::fs::{self, OpenOptions};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::{self, Command};
@@ -20,6 +21,12 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Commands {
+    /// Run a sample boundary in a temporary directory
+    Demo {
+        /// Keep the sample manifest and receipt in this directory
+        #[arg(long)]
+        output: Option<PathBuf>,
+    },
     /// Write a documented starter manifest
     Init {
         #[arg(short, long, default_value = DEFAULT_MANIFEST)]
@@ -78,6 +85,7 @@ fn main() {
 
 fn dispatch(cli: Cli) -> Result<(), AppError> {
     match cli.command {
+        Commands::Demo { output } => demo(output),
         Commands::Init { path, force } => init(&path, force),
         Commands::Preview { manifest, json } => preview(&manifest, json),
         Commands::Check { manifest, json } => check(&manifest, json),
@@ -89,6 +97,86 @@ fn dispatch(cli: Cli) -> Result<(), AppError> {
             command,
         } => run(&manifest, receipt, no_receipt, json, command),
     }
+}
+
+fn demo(output: Option<PathBuf>) -> Result<(), AppError> {
+    let directory = output.unwrap_or_else(|| {
+        std::env::temp_dir().join(format!("clean-env-demo-{}", receipt_id(unix_ms_now())))
+    });
+    fs::create_dir_all(&directory).map_err(|error| {
+        AppError::new(
+            70,
+            format!(
+                "could not create demo directory {}: {error}",
+                directory.display()
+            ),
+        )
+    })?;
+    let manifest = directory.join(DEFAULT_MANIFEST);
+    let receipt = directory.join("receipt.json");
+    let mut options = OpenOptions::new();
+    options.write(true).create_new(true);
+    let mut file = options.open(&manifest).map_err(|error| {
+        AppError::new(
+            65,
+            format!(
+                "could not create demo manifest {}: {error}; choose an empty --output directory",
+                manifest.display()
+            ),
+        )
+    })?;
+    file.write_all(DEMO_MANIFEST.as_bytes()).map_err(|error| {
+        AppError::new(
+            70,
+            format!(
+                "could not write demo manifest {}: {error}",
+                manifest.display()
+            ),
+        )
+    })?;
+
+    let executable = std::env::current_exe()
+        .map_err(|error| AppError::new(70, format!("could not locate clean-env: {error}")))?;
+    let mut command = Command::new(executable);
+    command
+        .env("CLEAN_ENV_DEMO_TOKEN", "sample-token-not-a-credential")
+        .env("AMBIENT_DEMO_VARIABLE", "this-must-not-reach-the-child")
+        .args(["run", "--manifest"])
+        .arg(&manifest)
+        .args(["--receipt"])
+        .arg(&receipt)
+        .arg("--");
+    for argument in demo_child_command() {
+        command.arg(argument);
+    }
+    let status = command
+        .status()
+        .map_err(|error| AppError::new(70, format!("could not start sample run: {error}")))?;
+    if !status.success() {
+        return Err(AppError::new(
+            status.code().unwrap_or(70),
+            "sample run did not complete",
+        ));
+    }
+    println!("Sample run complete. Inspect {}", directory.display());
+    Ok(())
+}
+
+#[cfg(unix)]
+fn demo_child_command() -> Vec<OsString> {
+    vec![OsString::from("/usr/bin/env")]
+}
+
+#[cfg(windows)]
+fn demo_child_command() -> Vec<OsString> {
+    let shell = std::env::var_os("COMSPEC")
+        .unwrap_or_else(|| OsString::from(r"C:\Windows\System32\cmd.exe"));
+    vec![
+        shell,
+        OsString::from("/D"),
+        OsString::from("/C"),
+        OsString::from("set"),
+    ]
 }
 
 fn init(path: &Path, force: bool) -> Result<(), AppError> {
@@ -124,24 +212,26 @@ fn init(path: &Path, force: bool) -> Result<(), AppError> {
 fn preview(path: &Path, as_json: bool) -> Result<(), AppError> {
     let (manifest, _, digest) = load_manifest(path)?;
     let environment = resolve_environment(&manifest, path, digest);
+    let safe_preview = scrub_preview(&environment.preview, &environment.secret_values);
     if as_json {
         println!(
             "{}",
-            serde_json::to_string_pretty(&environment.preview)
+            serde_json::to_string_pretty(&safe_preview)
                 .map_err(|e| AppError::new(70, e.to_string()))?
         );
     } else {
-        println!("ENVIRONMENT PROOF  {}", path.display());
+        println!(
+            "ENVIRONMENT PROOF  {}",
+            redact_argument(path.as_os_str(), &environment.secret_values)
+        );
         println!(
             "{} declared · {} ambient removed · {} required missing\n",
-            environment.preview.declared,
-            environment.preview.removed,
-            environment.preview.missing_required
+            safe_preview.declared, safe_preview.removed, safe_preview.missing_required
         );
-        if environment.preview.variables.is_empty() {
+        if safe_preview.variables.is_empty() {
             println!("(empty) The child receives no environment variables.");
         }
-        for item in &environment.preview.variables {
+        for item in &safe_preview.variables {
             let value = item.display_value.as_deref().unwrap_or("—");
             println!(
                 "{:<10} {:<24} {:<18} {}",
@@ -158,17 +248,18 @@ fn preview(path: &Path, as_json: bool) -> Result<(), AppError> {
 fn check(path: &Path, as_json: bool) -> Result<(), AppError> {
     let (manifest, _, digest) = load_manifest(path)?;
     let environment = resolve_environment(&manifest, path, digest);
+    let safe_preview = scrub_preview(&environment.preview, &environment.secret_values);
     if let Err(error) = ensure_complete(&environment) {
         if as_json {
             println!(
                 "{}",
-                json!({"ok": false, "error": error.message, "preview": environment.preview})
+                json!({"ok": false, "error": error.message, "preview": safe_preview})
             );
         }
         return Err(error);
     }
     if as_json {
-        println!("{}", json!({"ok": true, "preview": environment.preview}));
+        println!("{}", json!({"ok": true, "preview": safe_preview}));
     } else {
         println!(
             "Manifest valid. {} variables declared; all required inputs are available.",
@@ -232,8 +323,11 @@ fn run(
         None
     } else {
         let path = receipt_path.unwrap_or_else(|| default_receipt_path(&id));
-        write_receipt(&path, &receipt)?;
-        Some(path)
+        write_receipt(&path, &receipt, &environment.secret_values)?;
+        Some(redact_argument(
+            path.as_os_str(),
+            &environment.secret_values,
+        ))
     };
     if as_json {
         println!(
@@ -241,7 +335,7 @@ fn run(
             json!({"outcome": outcome, "exit_code": exit_code, "duration_ms": duration_ms, "receipt": written_path})
         );
     } else if let Some(path) = &written_path {
-        eprintln!("clean-env: {outcome}; receipt {}", path.display());
+        eprintln!("clean-env: {outcome}; receipt {path}");
     } else {
         eprintln!("clean-env: {outcome}; receipt disabled");
     }

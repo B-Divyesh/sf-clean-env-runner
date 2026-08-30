@@ -15,10 +15,20 @@ Build the single binary with Rust 1.85 or newer:
 cargo install --path .
 ```
 
-The factory publishes release binaries separately. No telemetry or network access is
-included.
+The factory publishes release binaries separately.
 
 ## Usage
+
+Run the bundled sample without creating a project:
+
+```sh
+clean-env demo
+```
+
+The command creates a temporary directory, runs a real clean boundary, writes a
+scrubbed receipt, and prints the location. Use `clean-env demo --output <directory>`
+to choose an empty destination. The same sample manifest ships in
+[`examples/demo/clean-env.toml`](examples/demo/clean-env.toml).
 
 Create a documented starter manifest:
 
@@ -63,7 +73,7 @@ receipt contains the command, working directory, manifest SHA-256, platform, tim
 exit status, and variable names/sources—never secret values. Use `--no-receipt` to
 disable it or `--receipt <path>` to select a file.
 
-Every reporting command supports `--json` for scripts:
+Preview, check, and run support `--json` for scripts:
 
 ```sh
 clean-env preview --json
@@ -96,14 +106,16 @@ npm test                 # Rust tests + site unit/accessibility smoke tests
 npm run build            # release binary + site -> dist/
 npm run build:site       # static site only -> dist/site/
 cargo test
-cargo package --allow-dirty
+cargo package --locked --allow-dirty
 ```
 
-Run the docs locally with `npm run dev`. The site is static, stores nothing, and has
+Run the docs locally with `npm run dev`. The site stores no user data and has
 no analytics, cookies, third-party scripts, or remote fonts. Read the published
 [privacy policy](https://clean-env-runner.sociobot.in/privacy/) and
 [terms](https://clean-env-runner.sociobot.in/terms/) for the local receipt and site-cache
 details. Deployment publishes `dist/site` at <https://clean-env-runner.sociobot.in>.
+The browser demo is available at
+<https://clean-env-runner.sociobot.in/?demo=1#proofreader>.
 
 The deployment artifact includes both portable `_headers` and Azure Static Web Apps
 `staticwebapp.config.json` policy files. Hashed assets are cached for a year with
@@ -112,5 +124,5 @@ same-origin CSP and restrictive Permissions-Policy.
 
 ## Project status
 
-This is `0.1.0`. See [CHANGELOG.md](CHANGELOG.md) for release notes. Licensed under
+This is `0.1.1`. See [CHANGELOG.md](CHANGELOG.md) for release notes. Licensed under
 the [MIT License](LICENSE).

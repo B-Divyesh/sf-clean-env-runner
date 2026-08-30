@@ -29,17 +29,26 @@ function renderAudit() {
   output.innerHTML = `<table><caption>${audit.variables.length} declared ${audit.variables.length === 1 ? 'variable' : 'variables'}</caption><thead><tr><th>Name</th><th>Source</th><th>Handling</th></tr></thead><tbody>${audit.variables.map((variable) => `<tr><td><code>${escapeHtml(variable.name)}</code></td><td>${escapeHtml(variable.sources[0])}</td><td>${variable.secret ? 'Redacted' : 'Visible'}${variable.required ? ' · required' : ' · optional'}</td></tr>`).join('')}</tbody></table><p class="audit-note">Everything not listed is removed before the child starts.</p>`;
 }
 
+function loadPreset(name, focusEditor = true) {
+  const selected = presets.find((button) => button.dataset.preset === name);
+  presets.forEach((item) => {
+    item.classList.toggle('active', item === selected);
+    item.setAttribute('aria-pressed', String(item === selected));
+  });
+  manifest.value = PRESETS[name];
+  renderAudit();
+  if (focusEditor) manifest.focus();
+}
+
 manifest.value = PRESETS.safe;
 manifest.addEventListener('input', renderAudit);
-presets.forEach((button) => button.addEventListener('click', () => {
-  presets.forEach((item) => {
-    item.classList.toggle('active', item === button);
-    item.setAttribute('aria-pressed', String(item === button));
-  });
-  manifest.value = PRESETS[button.dataset.preset];
-  renderAudit();
-  manifest.focus();
-}));
+presets.forEach((button) => button.addEventListener('click', () => loadPreset(button.dataset.preset)));
+
+if (new URLSearchParams(window.location.search).get('demo') === '1') {
+  document.title = 'Demo — Clean Env Runner';
+  document.querySelector('#demo-banner').hidden = false;
+  document.querySelector('#reset-demo').addEventListener('click', () => loadPreset('safe'));
+}
 
 document.querySelector('.copy').addEventListener('click', async (event) => {
   const status = document.querySelector('#copy-status');
@@ -53,7 +62,10 @@ document.querySelector('.copy').addEventListener('click', async (event) => {
 });
 
 function updateConnection() {
-  offline.hidden = navigator.onLine;
+  offline.textContent = navigator.onLine
+    ? 'Offline-ready — the guide and sample manifest remain available after the first visit.'
+    : 'Offline edition — the guide and sample manifest remain available.';
+  offline.classList.toggle('is-offline', !navigator.onLine);
 }
 window.addEventListener('online', updateConnection);
 window.addEventListener('offline', updateConnection);

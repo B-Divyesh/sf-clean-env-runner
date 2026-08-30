@@ -1,0 +1,79 @@
+[
+  {
+    "id": "explicit-boundary",
+    "claim": "The child receives only environment variables declared in the manifest.",
+    "where": "landing page, README",
+    "test": "node --test --test-name-pattern='@claim:explicit-boundary' site/tests/claims.test.mjs",
+    "sandbox": "temporary manifest; injected declared secret and undeclared ambient values; inspect child environment"
+  },
+  {
+    "id": "receipt-secret-redaction",
+    "claim": "Previews, checks, receipts, and Clean Env Runner receipt diagnostics omit declared secret values.",
+    "where": "landing page, README, privacy, terms",
+    "test": "node --test --test-name-pattern='@claim:receipt-secret-redaction' site/tests/claims.test.mjs",
+    "sandbox": "temporary runs with the secret embedded in preview metadata, source names, command, working directory, and success/error receipt paths"
+  },
+  {
+    "id": "literal-secret-refusal",
+    "claim": "The CLI rejects literal values marked as secrets.",
+    "where": "landing page, README, terms",
+    "test": "node --test --test-name-pattern='@claim:literal-secret-refusal' site/tests/claims.test.mjs",
+    "sandbox": "parse a manifest containing a literal secret and assert rejection without echoing its value"
+  },
+  {
+    "id": "demo-command",
+    "claim": "clean-env demo runs bundled sample data in a new local directory.",
+    "where": "landing page, README",
+    "test": "node --test --test-name-pattern='@claim:demo-command' site/tests/claims.test.mjs",
+    "sandbox": "temporary output directory; bundled manifest; real child process; inspect scrubbed receipt"
+  },
+  {
+    "id": "json-output",
+    "claim": "Preview, check, and run can emit machine-readable JSON.",
+    "where": "landing page, README",
+    "test": "node --test --test-name-pattern='@claim:json-output' site/tests/claims.test.mjs",
+    "sandbox": "temporary valid manifest; parse each command's output as JSON"
+  },
+  {
+    "id": "stable-exits",
+    "claim": "Missing required input returns 66 and a completed child run preserves its exit code.",
+    "where": "README",
+    "test": "node --test --test-name-pattern='@claim:stable-exits' site/tests/claims.test.mjs",
+    "sandbox": "temporary manifests; absent required value; child exits 23"
+  },
+  {
+    "id": "browser-local-only",
+    "claim": "The browser demo sends no manifest text away and stores no user data.",
+    "where": "landing page, privacy, README",
+    "test": "npx playwright test --grep='@claim:browser-local-only'",
+    "sandbox": "fresh browser context; edit demo; record requests, cookies, localStorage, sessionStorage, and IndexedDB; reload"
+  },
+  {
+    "id": "offline-reload",
+    "claim": "The guide and sample manifest remain available offline after the first visit.",
+    "where": "offline status",
+    "test": "npx playwright test --grep='@claim:offline-reload'",
+    "sandbox": "fresh browser context; wait for service worker; set context offline; reload and inspect guide/status"
+  },
+  {
+    "id": "mit-license",
+    "claim": "Clean Env Runner is free under the MIT License.",
+    "where": "first screen, README, terms",
+    "test": "node --test --test-name-pattern='@claim:mit-license' site/tests/claims.test.mjs",
+    "sandbox": "read the distributed LICENSE and assert the MIT grant"
+  },
+  {
+    "id": "single-binary",
+    "claim": "The Rust package defines one clean-env executable.",
+    "where": "landing page, README",
+    "test": "node --test --test-name-pattern='@claim:single-binary' site/tests/claims.test.mjs",
+    "sandbox": "read Cargo metadata and assert the package exposes exactly one binary target"
+  },
+  {
+    "id": "response-policy",
+    "claim": "Hashed assets use immutable caching while HTML and the service worker revalidate; browser policies are restrictive.",
+    "where": "README",
+    "test": "node --test --test-name-pattern='@claim:response-policy' site/tests/release-contract.test.mjs",
+    "sandbox": "inspect both static-host policy files and their exact route/header configuration"
+  }
+]

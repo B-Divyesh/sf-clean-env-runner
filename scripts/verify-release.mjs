@@ -5,7 +5,7 @@ const site = new URL('../dist/site/', import.meta.url);
 const text = async (path) => readFile(new URL(path, site), 'utf8');
 const exists = async (path) => stat(new URL(path, site));
 
-for (const page of ['privacy/index.html', 'terms/index.html']) {
+for (const page of ['privacy/index.html', 'terms/index.html', '404.html']) {
   await exists(page);
   const html = await text(page);
   assert.match(html, /<html lang="en">/);
@@ -23,6 +23,7 @@ assert.match(headers, /\/assets\/\*[\s\S]*?Cache-Control: public, max-age=315360
 assert.match(headers, /\/sw\.js[\s\S]*?Cache-Control: no-cache, must-revalidate/);
 assert.match(headers, /\/privacy\/\*[\s\S]*?Cache-Control: no-cache, must-revalidate/);
 assert.match(headers, /\/terms\/\*[\s\S]*?Cache-Control: no-cache, must-revalidate/);
+assert.match(headers, /\/404\.html[\s\S]*?Cache-Control: no-cache, must-revalidate/);
 assert.doesNotMatch(headers, /^\/\*\s*\n(?:\s*#.*\n)*\s*Cache-Control:/m, 'global browser policies must not override immutable asset caching');
 assert.match(headers, /\/\*[\s\S]*?Content-Security-Policy: default-src 'self';/);
 assert.match(headers, /Permissions-Policy: /);
@@ -34,9 +35,10 @@ assert.match(azure.globalHeaders['permissions-policy'], /camera=\(\).*microphone
 assert.deepEqual(azure.routes[0], { route: '/assets/*', headers: { 'cache-control': 'public, max-age=31536000, immutable' } });
 assert.deepEqual(azure.routes.find((route) => route.route === '/sw.js'), { route: '/sw.js', headers: { 'cache-control': 'no-cache, must-revalidate' } });
 assert.equal(azure.routes.some((route) => route.route === '/*'), false, 'a catch-all cache route can override immutable asset caching');
-for (const route of ['/', '/index.html', '/privacy/*', '/terms/*']) {
+for (const route of ['/', '/index.html', '/404.html', '/privacy/*', '/terms/*']) {
   assert.deepEqual(azure.routes.find((entry) => entry.route === route), { route, headers: { 'cache-control': 'no-cache, must-revalidate' } });
 }
+assert.deepEqual(azure.responseOverrides, { 404: { rewrite: '/404.html' } });
 
 const serviceWorker = await text('sw.js');
 assert.match(serviceWorker, /const CACHE = 'clean-env-runner-[a-f0-9]{12}';/);

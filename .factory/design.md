@@ -58,6 +58,10 @@ scrolling become instant.
   wide landscape composition.” Generated 2026-08-28. Used as explanatory atmosphere,
   with alt text describing the boundary metaphor. No third-party assets.
 - All rules, status marks, and UI diagrams are CSS/HTML primitives authored in-repo.
+- `site/public/social-card.webp`: a 1200×630 center crop derived locally from the
+  original `environment-proof.webp`; no new source material or third-party asset.
+- `site/public/apple-touch-icon.png`: a 180 px raster icon drawn locally from the
+  favicon's paper, ink, and proof-mark geometry with ImageMagick primitives.
 
 ## Accessibility and performance intent
 

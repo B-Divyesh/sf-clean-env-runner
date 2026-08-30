@@ -9,6 +9,7 @@ use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub const DEFAULT_MANIFEST: &str = "clean-env.toml";
+pub const DEMO_MANIFEST: &str = include_str!("../examples/demo/clean-env.toml");
 pub const STARTER_MANIFEST: &str = r#"# Clean Env Runner manifest. Only these names reach the child process.
 version = 1
 
@@ -103,7 +104,7 @@ pub struct ResolvedEnvironment {
     pub secret_values: Vec<OsString>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Receipt {
     pub schema_version: u8,
     pub id: String,
@@ -118,7 +119,7 @@ pub struct Receipt {
     pub environment: Vec<ReceiptVariable>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct ReceiptVariable {
     pub name: String,
     pub source: String,
@@ -331,7 +332,11 @@ pub fn default_receipt_path(id: &str) -> PathBuf {
 }
 
 pub fn redact_argument(argument: &OsStr, secret_values: &[OsString]) -> String {
-    let mut text = argument.to_string_lossy().into_owned();
+    redact_text(&argument.to_string_lossy(), secret_values)
+}
+
+pub fn redact_text(text: &str, secret_values: &[OsString]) -> String {
+    let mut text = text.to_owned();
     for secret in secret_values {
         let secret = secret.to_string_lossy();
         if !secret.is_empty() {
@@ -341,24 +346,64 @@ pub fn redact_argument(argument: &OsStr, secret_values: &[OsString]) -> String {
     text
 }
 
-pub fn write_receipt(path: &Path, receipt: &Receipt) -> Result<(), AppError> {
+pub fn scrub_preview(preview: &Preview, secret_values: &[OsString]) -> Preview {
+    let mut scrubbed = preview.clone();
+    scrubbed.manifest = redact_text(&scrubbed.manifest, secret_values);
+    scrubbed.manifest_sha256 = redact_text(&scrubbed.manifest_sha256, secret_values);
+    for variable in &mut scrubbed.variables {
+        variable.name = redact_text(&variable.name, secret_values);
+        variable.source = redact_text(&variable.source, secret_values);
+        variable.state = redact_text(&variable.state, secret_values);
+        if let Some(value) = &mut variable.display_value {
+            *value = redact_text(value, secret_values);
+        }
+    }
+    scrubbed
+}
+
+fn scrub_receipt(receipt: &Receipt, secret_values: &[OsString]) -> Receipt {
+    let mut scrubbed = receipt.clone();
+    scrubbed.id = redact_text(&scrubbed.id, secret_values);
+    scrubbed.manifest_sha256 = redact_text(&scrubbed.manifest_sha256, secret_values);
+    for argument in &mut scrubbed.command {
+        *argument = redact_text(argument, secret_values);
+    }
+    scrubbed.working_directory = redact_text(&scrubbed.working_directory, secret_values);
+    scrubbed.platform = redact_text(&scrubbed.platform, secret_values);
+    scrubbed.outcome = redact_text(&scrubbed.outcome, secret_values);
+    for variable in &mut scrubbed.environment {
+        variable.name = redact_text(&variable.name, secret_values);
+        variable.source = redact_text(&variable.source, secret_values);
+        variable.state = redact_text(&variable.state, secret_values);
+    }
+    scrubbed
+}
+
+pub fn write_receipt(
+    path: &Path,
+    receipt: &Receipt,
+    secret_values: &[OsString],
+) -> Result<(), AppError> {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).map_err(|error| {
             AppError::new(
                 70,
                 format!(
                     "could not create receipt directory {}: {error}",
-                    parent.display()
+                    redact_argument(parent.as_os_str(), secret_values)
                 ),
             )
         })?;
     }
-    let json = serde_json::to_vec_pretty(receipt)
+    let json = serde_json::to_vec_pretty(&scrub_receipt(receipt, secret_values))
         .map_err(|error| AppError::new(70, format!("could not serialize receipt: {error}")))?;
     fs::write(path, json).map_err(|error| {
         AppError::new(
             70,
-            format!("could not write receipt {}: {error}", path.display()),
+            format!(
+                "could not write receipt {}: {error}",
+                redact_argument(path.as_os_str(), secret_values)
+            ),
         )
     })
 }
@@ -428,5 +473,56 @@ required=false"#,
             redact_argument(OsStr::new("--token=abc123"), &[OsString::from("abc123")]),
             "--token=[REDACTED]"
         );
+    }
+
+    #[test]
+    fn scrubs_declared_secrets_from_every_receipt_string_field() {
+        let secret = OsString::from("private-value");
+        let receipt = Receipt {
+            schema_version: 1,
+            id: "id-private-value".to_owned(),
+            manifest_sha256: "hash-private-value".to_owned(),
+            command: vec!["run-private-value".to_owned()],
+            working_directory: "/tmp/private-value".to_owned(),
+            platform: "platform-private-value".to_owned(),
+            started_unix_ms: 1,
+            duration_ms: 2,
+            exit_code: Some(0),
+            outcome: "outcome-private-value".to_owned(),
+            environment: vec![ReceiptVariable {
+                name: "name-private-value".to_owned(),
+                source: "source-private-value".to_owned(),
+                secret: true,
+                state: "state-private-value".to_owned(),
+            }],
+        };
+
+        let json = serde_json::to_string(&scrub_receipt(&receipt, &[secret])).unwrap();
+        assert!(!json.contains("private-value"), "{json}");
+        assert_eq!(json.matches("[REDACTED]").count(), 9);
+    }
+
+    #[test]
+    fn scrubs_declared_secrets_from_every_preview_string_field() {
+        let secret = OsString::from("private-value");
+        let preview = Preview {
+            manifest: "/tmp/private-value/clean-env.toml".to_owned(),
+            manifest_sha256: "hash-private-value".to_owned(),
+            declared: 1,
+            removed: 2,
+            missing_required: 0,
+            variables: vec![PreviewVariable {
+                name: "name-private-value".to_owned(),
+                source: "source-private-value".to_owned(),
+                state: "state-private-value".to_owned(),
+                display_value: Some("display-private-value".to_owned()),
+                secret: true,
+                required: true,
+            }],
+        };
+
+        let json = serde_json::to_string(&scrub_preview(&preview, &[secret])).unwrap();
+        assert!(!json.contains("private-value"), "{json}");
+        assert_eq!(json.matches("[REDACTED]").count(), 6);
     }
 }

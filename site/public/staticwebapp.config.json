@@ -29,6 +29,18 @@
       }
     },
     {
+      "route": "/apple-touch-icon.png",
+      "headers": {
+        "cache-control": "public, max-age=31536000, immutable"
+      }
+    },
+    {
+      "route": "/social-card.webp",
+      "headers": {
+        "cache-control": "public, max-age=31536000, immutable"
+      }
+    },
+    {
       "route": "/sw.js",
       "headers": {
         "cache-control": "no-cache, must-revalidate"
@@ -47,6 +59,12 @@
       }
     },
     {
+      "route": "/404.html",
+      "headers": {
+        "cache-control": "no-cache, must-revalidate"
+      }
+    },
+    {
       "route": "/privacy/*",
       "headers": {
         "cache-control": "no-cache, must-revalidate"
@@ -58,5 +76,10 @@
         "cache-control": "no-cache, must-revalidate"
       }
     }
-  ]
+  ],
+  "responseOverrides": {
+    "404": {
+      "rewrite": "/404.html"
+    }
+  }
 }
