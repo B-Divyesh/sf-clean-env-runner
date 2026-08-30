@@ -51,10 +51,11 @@ if (new URLSearchParams(window.location.search).get('demo') === '1') {
 }
 
 document.querySelector('.copy').addEventListener('click', async (event) => {
+  const button = event.currentTarget;
   const status = document.querySelector('#copy-status');
   try {
-    await navigator.clipboard.writeText(event.currentTarget.dataset.copy);
-    event.currentTarget.textContent = 'Copied';
+    await navigator.clipboard.writeText(button.dataset.copy);
+    button.textContent = 'Copied';
     status.textContent = 'Command copied to clipboard.';
   } catch {
     status.textContent = 'Clipboard access was blocked. Select the command and copy it manually.';

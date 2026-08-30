@@ -33,6 +33,47 @@ test('proofreader handles valid, empty, and error states by keyboard', async ({ 
   await expect(page.getByText('1 declared variable')).toBeVisible();
 });
 
+test('copy reports clipboard success and denied-permission recovery by keyboard', async ({ browser, baseURL }) => {
+  const successContext = await browser.newContext({ permissions: ['clipboard-read', 'clipboard-write'] });
+  const successPage = await successContext.newPage();
+  try {
+    await successPage.goto(baseURL);
+    const copy = successPage.locator('.copy');
+    await expect(copy).toHaveAccessibleName('Copy');
+    await copy.focus();
+    await successPage.keyboard.press('Enter');
+    await expect(copy).toHaveText('Copied');
+    await expect(successPage.locator('#copy-status')).toHaveText('Command copied to clipboard.');
+    await expect.poll(() => successPage.evaluate(() => navigator.clipboard.readText())).toBe(
+      'cargo install --git https://github.com/B-Divyesh/sf-clean-env-runner',
+    );
+  } finally {
+    await successContext.close();
+  }
+
+  const deniedContext = await browser.newContext();
+  await deniedContext.addInitScript(() => {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: () => Promise.reject(new DOMException('Denied', 'NotAllowedError')) },
+    });
+  });
+  const deniedPage = await deniedContext.newPage();
+  try {
+    await deniedPage.goto(baseURL);
+    const copy = deniedPage.locator('.copy');
+    await expect(copy).toHaveAccessibleName('Copy');
+    await copy.focus();
+    await deniedPage.keyboard.press('Space');
+    await expect(copy).toHaveText('Copy');
+    await expect(deniedPage.locator('#copy-status')).toHaveText(
+      'Clipboard access was blocked. Select the command and copy it manually.',
+    );
+  } finally {
+    await deniedContext.close();
+  }
+});
+
 test('reduced motion disables smooth scrolling and transitions', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');

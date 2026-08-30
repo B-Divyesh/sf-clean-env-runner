@@ -13,6 +13,19 @@ for (const page of ['privacy/index.html', 'terms/index.html', '404.html']) {
   assert.equal((html.match(/<h1[ >]/g) ?? []).length, 1, `${page} must have exactly one h1`);
 }
 
+const notFound = await text('404.html');
+for (const metadata of [
+  'property="og:type" content="website"',
+  'property="og:url" content="https://clean-env-runner.sociobot.in/404.html"',
+  'property="og:title" content="Page not found — Clean Env Runner"',
+  'property="og:image" content="https://clean-env-runner.sociobot.in/social-card.webp"',
+  'name="twitter:card" content="summary_large_image"',
+  'name="twitter:title" content="Page not found — Clean Env Runner"',
+  'name="twitter:image" content="https://clean-env-runner.sociobot.in/social-card.webp"',
+]) {
+  assert.match(notFound, new RegExp(metadata.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), `404 page missing ${metadata}`);
+}
+
 const privacy = await text('privacy/index.html');
 for (const phrase of ['.clean-env/receipts/', 'working directory', 'timestamps', 'variable names', '--no-receipt', 'no accounts, analytics, cookies, telemetry, or network collection']) {
   assert.match(privacy, new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'), `privacy page missing ${phrase}`);

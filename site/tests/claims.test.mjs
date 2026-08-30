@@ -57,3 +57,15 @@ test('@claim:single-binary Cargo defines one executable target', async () => {
   const targets = metadata.packages[0].targets.filter((target) => target.kind.includes('bin'));
   assert.deepEqual(targets.map((target) => target.name), ['clean-env']);
 });
+
+test('@claim:init-no-overwrite init preserves an existing manifest', async () => {
+  await cargoTest('--test', 'cli', 'init_refuses_to_overwrite_an_existing_manifest', '--', '--exact');
+});
+
+test('@claim:receipt-controls receipt writing can be disabled or redirected', async () => {
+  await cargoTest('--test', 'cli', 'receipt_controls_disable_or_redirect_receipt_writes', '--', '--exact');
+});
+
+test('@claim:declared-path-resolution bare commands use the declared child PATH', async () => {
+  await cargoTest('--test', 'cli', 'bare_executable_is_resolved_from_the_declared_path', '--', '--exact');
+});

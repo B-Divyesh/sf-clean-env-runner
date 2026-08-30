@@ -70,6 +70,27 @@
     "sandbox": "read Cargo metadata and assert the package exposes exactly one binary target"
   },
   {
+    "id": "init-no-overwrite",
+    "claim": "clean-env init refuses to overwrite an existing manifest unless replacement is explicitly requested.",
+    "where": "landing page",
+    "test": "node --test --test-name-pattern='@claim:init-no-overwrite' site/tests/claims.test.mjs",
+    "sandbox": "temporary existing manifest with sentinel content; run init; assert exit 65 and byte-identical content"
+  },
+  {
+    "id": "receipt-controls",
+    "claim": "--no-receipt disables receipt writing and --receipt selects a local destination.",
+    "where": "README, privacy",
+    "test": "node --test --test-name-pattern='@claim:receipt-controls' site/tests/claims.test.mjs",
+    "sandbox": "temporary manifest; run once with receipt disabled and once with a selected nested path; inspect the filesystem"
+  },
+  {
+    "id": "declared-path-resolution",
+    "claim": "A bare executable is resolved using the PATH declared for the child.",
+    "where": "README",
+    "test": "node --test --test-name-pattern='@claim:declared-path-resolution' site/tests/claims.test.mjs",
+    "sandbox": "temporary executable available only in the manifest-declared PATH while the parent PATH points elsewhere"
+  },
+  {
     "id": "response-policy",
     "claim": "Hashed assets use immutable caching while HTML and the service worker revalidate; browser policies are restrictive.",
     "where": "README",

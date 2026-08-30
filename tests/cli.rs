@@ -2,6 +2,7 @@
 
 use serde_json::Value;
 use std::fs;
+use std::os::unix::fs::PermissionsExt;
 use std::process::Command;
 
 fn binary() -> &'static str {
@@ -181,25 +182,89 @@ fn child_exit_code_is_preserved() {
 }
 
 #[test]
+fn init_refuses_to_overwrite_an_existing_manifest() {
+    let directory = tempfile::tempdir().unwrap();
+    let manifest = directory.path().join("clean-env.toml");
+    let original = "version=1\n[env.KEEP]\nvalue=\"original\"\n";
+    fs::write(&manifest, original).unwrap();
+
+    let output = Command::new(binary())
+        .args(["init", "--path"])
+        .arg(&manifest)
+        .output()
+        .unwrap();
+
+    assert_eq!(output.status.code(), Some(65));
+    assert_eq!(fs::read_to_string(&manifest).unwrap(), original);
+    assert!(String::from_utf8_lossy(&output.stderr).contains("use --force to replace it"));
+}
+
+#[test]
+fn receipt_controls_disable_or_redirect_receipt_writes() {
+    let directory = tempfile::tempdir().unwrap();
+    let manifest = directory.path().join("clean-env.toml");
+    fs::write(&manifest, "version=1\n").unwrap();
+
+    let disabled = Command::new(binary())
+        .current_dir(directory.path())
+        .args(["run", "--no-receipt", "--manifest"])
+        .arg(&manifest)
+        .args(["--", "/usr/bin/true"])
+        .output()
+        .unwrap();
+    assert!(disabled.status.success());
+    assert!(!directory.path().join(".clean-env").exists());
+    assert!(String::from_utf8_lossy(&disabled.stderr).contains("receipt disabled"));
+
+    let selected = directory.path().join("selected").join("run.json");
+    let redirected = Command::new(binary())
+        .current_dir(directory.path())
+        .args(["run", "--manifest"])
+        .arg(&manifest)
+        .args(["--receipt"])
+        .arg(&selected)
+        .args(["--", "/usr/bin/true"])
+        .output()
+        .unwrap();
+    assert!(redirected.status.success());
+    assert!(selected.is_file());
+    assert!(!directory.path().join(".clean-env").exists());
+    assert!(String::from_utf8_lossy(&redirected.stderr).contains(&selected.display().to_string()));
+}
+
+#[test]
 fn bare_executable_is_resolved_from_the_declared_path() {
     let directory = tempfile::tempdir().unwrap();
+    let declared_bin = directory.path().join("declared-bin");
+    fs::create_dir(&declared_bin).unwrap();
+    let executable = declared_bin.join("declared-path-command");
+    fs::write(&executable, "#!/bin/sh\nprintf 'PROOF=%s\\n' \"$PROOF\"\n").unwrap();
+    let mut permissions = fs::metadata(&executable).unwrap().permissions();
+    permissions.set_mode(0o755);
+    fs::set_permissions(&executable, permissions).unwrap();
     let manifest = directory.path().join("clean-env.toml");
     fs::write(
         &manifest,
-        "version=1\n[env.PATH]\nvalue=\"/usr/bin:/bin\"\n[env.PROOF]\nvalue=\"clean\"\n",
+        format!(
+            "version=1\n[env.PATH]\nvalue={}\n[env.PROOF]\nvalue=\"clean\"\n",
+            toml::Value::String(declared_bin.display().to_string())
+        ),
     )
     .unwrap();
     let output = Command::new(binary())
         .current_dir(directory.path())
+        .env("PATH", "/path/that/does/not/contain/the/command")
         .args(["run", "--no-receipt", "--manifest"])
         .arg(manifest)
-        .args(["--", "env"])
+        .args(["--", "declared-path-command"])
         .output()
         .unwrap();
-    assert!(output.status.success());
-    let stdout = String::from_utf8(output.stdout).unwrap();
-    assert!(stdout.contains("PROOF=clean"));
-    assert!(!stdout.contains("HOME="));
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(String::from_utf8(output.stdout).unwrap(), "PROOF=clean\n");
 }
 
 #[test]

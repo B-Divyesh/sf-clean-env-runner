@@ -26,6 +26,19 @@ test('terms page is a complete accessible static route', async () => {
   assert.match(terms, /literal secrets/i);
 });
 
+test('404 route publishes complete product social metadata', async () => {
+  const notFound = await text('404.html');
+  assert.match(notFound, /<meta property="og:type" content="website">/);
+  assert.match(notFound, /<meta property="og:url" content="https:\/\/clean-env-runner\.sociobot\.in\/404\.html">/);
+  assert.match(notFound, /<meta property="og:title" content="Page not found — Clean Env Runner">/);
+  assert.match(notFound, /<meta property="og:description" content="The requested Clean Env Runner page was not found\.">/);
+  assert.match(notFound, /<meta property="og:image" content="https:\/\/clean-env-runner\.sociobot\.in\/social-card\.webp">/);
+  assert.match(notFound, /<meta name="twitter:card" content="summary_large_image">/);
+  assert.match(notFound, /<meta name="twitter:title" content="Page not found — Clean Env Runner">/);
+  assert.match(notFound, /<meta name="twitter:description" content="The requested Clean Env Runner page was not found\.">/);
+  assert.match(notFound, /<meta name="twitter:image" content="https:\/\/clean-env-runner\.sociobot\.in\/social-card\.webp">/);
+});
+
 test('browser claim commands build their production site from a clean checkout', async () => {
   const packageJson = JSON.parse(await text('../package.json'));
   const playwright = await text('../playwright.config.js');
@@ -37,6 +50,25 @@ test('browser claim commands build their production site from a clean checkout',
   assert.equal(browserClaims.length, 2);
   for (const claim of browserClaims) {
     assert.match(claim.test, /^npx playwright test --grep='@claim:[a-z-]+'$/);
+  }
+});
+
+test('every registered claim has one tagged regression', async () => {
+  const claims = JSON.parse(await text('../.factory/claims.json'));
+  const ids = claims.map(({ id }) => id);
+  assert.equal(new Set(ids).size, ids.length, 'claim ids must be unique');
+  const testSources = await Promise.all([
+    text('tests/claims.test.mjs'),
+    text('tests/release-contract.test.mjs'),
+    text('e2e/site.spec.js'),
+  ]);
+  for (const claim of claims) {
+    assert.match(claim.test, new RegExp(`@claim:${claim.id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
+    const tag = `@claim:${claim.id}`;
+    const definitions = testSources.flatMap((source) => (
+      [...source.matchAll(/test\(['"](@claim:[a-z-]+)\b/g)].map((match) => match[1])
+    )).filter((candidate) => candidate === tag);
+    assert.equal(definitions.length, 1, `${tag} must label exactly one test`);
   }
 });
 
