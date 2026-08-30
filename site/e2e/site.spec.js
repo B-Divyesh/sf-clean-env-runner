@@ -19,6 +19,10 @@ test('loads without console errors and passes the accessibility baseline', async
 
 test('proofreader handles valid, empty, and error states by keyboard', async ({ page }) => {
   await page.goto('/');
+  await page.keyboard.press('Tab');
+  const skipLink = page.getByRole('link', { name: 'Skip to main content' });
+  await expect(skipLink).toBeFocused();
+  expect(await skipLink.evaluate((element) => getComputedStyle(element).outlineWidth)).toBe('3px');
   await page.getByRole('button', { name: 'Empty boundary' }).focus();
   await page.keyboard.press('Enter');
   await expect(page.getByText('The child receives zero environment variables.')).toBeVisible();
@@ -27,6 +31,17 @@ test('proofreader handles valid, empty, and error states by keyboard', async ({ 
   await page.getByLabel('clean-env.toml').fill('version = 1\n\n[env.CI]\nvalue = "true"');
   await expect(page.locator('#audit-mark')).toHaveText('Pass');
   await expect(page.getByText('1 declared variable')).toBeVisible();
+});
+
+test('reduced motion disables smooth scrolling and transitions', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/');
+  const motion = await page.evaluate(() => ({
+    scrollBehavior: getComputedStyle(document.documentElement).scrollBehavior,
+    transitionDuration: getComputedStyle(document.querySelector('.primary-action')).transitionDuration,
+  }));
+  expect(motion.scrollBehavior).toBe('auto');
+  expect(Number.parseFloat(motion.transitionDuration)).toBeLessThanOrEqual(0.00001);
 });
 
 test('mobile layout does not overflow the viewport', async ({ page }) => {
@@ -117,6 +132,21 @@ test('@claim:browser-local-only demo input stays local and is not stored', async
   expect(await context.cookies()).toEqual([]);
   const origin = new URL(page.url()).origin;
   expect(requests.every((url) => new URL(url).origin === origin), requests.join('\n')).toBe(true);
+});
+
+test('the live worker accepts an update check and uses the versioned cache', async ({ page }) => {
+  await page.goto('/');
+  const worker = await page.evaluate(async () => {
+    const registration = await navigator.serviceWorker.ready;
+    await registration.update();
+    return {
+      active: registration.active?.scriptURL,
+      caches: await caches.keys(),
+    };
+  });
+  expect(worker.active).toMatch(/\/sw\.js$/);
+  expect(worker.caches).toHaveLength(1);
+  expect(worker.caches[0]).toMatch(/^clean-env-runner-[a-f0-9]{12}$/);
 });
 
 test('privacy and terms are real accessible policy routes', async ({ page }) => {

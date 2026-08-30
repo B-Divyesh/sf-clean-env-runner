@@ -64,10 +64,10 @@ cargo package --locked --allow-dirty
 - Production build: `dist/bin/clean-env` and `dist/site/` produced. Release verification
   passes. Initial JavaScript is 4,987 B; CSS is 14,467 B; desktop/mobile WebPs are 76,962 B
   and 25,452 B. All are below the product budgets.
-- Playwright 1.58.2: 14/14 pass across desktop Chromium and 390×844 mobile. Coverage includes
+- Playwright 1.58.2: 18/18 pass across desktop Chromium and 390×844 mobile. Coverage includes
   keyboard-only state recovery, no overflow, 44 px footer targets, zero serious/critical axe
   findings on root/policy/404 routes, no console errors, no user storage, same-origin-only
-  demo requests, reduced/offline-ready behavior, and isolated offline reload.
+  demo requests, reduced motion, service-worker update, and isolated offline reload.
 - Every command in `.factory/claims.json` passes from the clean install.
 - `cargo package --locked --allow-dirty`: 11 files; package verification passes. A fresh
   unpacked-crate `cargo install --path ... --root ... --locked` returns `clean-env 0.1.1`,
@@ -82,14 +82,29 @@ cargo package --locked --allow-dirty
 
 ## Deployment and live identity
 
-The static artifact to deploy is `dist/site` with:
+Repair commit `bc234ab` was pushed to `origin/main`. The verified `dist/site` artifact was
+deployed through the work-order command:
 
 ```sh
 /opt/fleet/lib/deploy-static.sh clean-env-runner /work/repo/dist/site
 ```
 
-Live deployment evidence will be appended after the committed repair is pushed and the
-factory deployment command completes.
+- Azure Static Web Apps deployment `956d5df5-b104-4e21-858f-21c80be7de4b` completed
+  successfully in `eastus2`; the custom domain reported `Ready` and HTTPS returned 200.
+- `/opt/fleet/lib/verify-url.sh` returned 200 in 620 ms with the expected title, `lang=en`,
+  one h1, main landmark, complete image alt text, labeled buttons, and no console/page errors.
+- Fourteen public files—root, privacy, terms, 404, service worker, images/icons, robots,
+  sitemap, and hashed JS/CSS—match `dist/site` byte-for-byte.
+- `/privacy/` and `/terms/` return 200, an unknown route returns the designed 404, and HTTP
+  redirects to HTTPS. Root and service worker send `no-cache, must-revalidate`; hashed JS
+  sends `public, max-age=31536000, immutable`; conditional requests return 304.
+- Root, hashed assets, and the worker send the intended same-origin CSP, restrictive
+  Permissions-Policy, HSTS, `Referrer-Policy: same-origin`, and `nosniff`.
+- The same 18-test Playwright suite passes directly against production on desktop and 390 px,
+  including axe, keyboard, privacy/storage, offline reload, cache version, and
+  `registration.update()` checks.
+- Live mobile Lighthouse: Performance 100, Accessibility 100, Best Practices 100, SEO 100;
+  FCP 1.0 s, LCP 1.1 s, TBT 0 ms, CLS 0, Speed Index 1.0 s.
 
 ## Known gaps
 
