@@ -118,6 +118,8 @@ test('@claim:browser-local-only demo input stays local and is not stored', async
   page.on('request', (request) => requests.push(request.url()));
   await page.goto('/?demo=1#proofreader');
   await expect(page).toHaveTitle('Demo — Clean Env Runner');
+  await expect(page.getByText('No user data stored or analytics')).toHaveCount(1);
+  await expect(page.getByText(/No browser storage/i)).toHaveCount(0);
   await expect(page.getByText('Demo — sample manifest, nothing is saved.')).toBeVisible();
   await page.getByLabel('clean-env.toml').fill('version = 1\n[env.TEST]\nvalue = "local-proof-9381"');
   await expect(page.getByText('1 declared variable')).toBeVisible();
@@ -127,8 +129,15 @@ test('@claim:browser-local-only demo input stays local and is not stored', async
     localStorage: localStorage.length,
     sessionStorage: sessionStorage.length,
     indexedDatabases: (await indexedDB.databases()).length,
+    cacheUrls: (await Promise.all((await caches.keys()).map(async (name) => (
+      (await caches.open(name)).keys().then((entries) => entries.map(({ url }) => url))
+    )))).flat(),
   }));
-  expect(state).toEqual({ localStorage: 0, sessionStorage: 0, indexedDatabases: 0 });
+  expect(state.localStorage).toBe(0);
+  expect(state.sessionStorage).toBe(0);
+  expect(state.indexedDatabases).toBe(0);
+  expect(state.cacheUrls.length).toBeGreaterThan(0);
+  expect(state.cacheUrls.every((url) => !url.includes('local-proof-9381')), state.cacheUrls.join('\n')).toBe(true);
   expect(await context.cookies()).toEqual([]);
   const origin = new URL(page.url()).origin;
   expect(requests.every((url) => new URL(url).origin === origin), requests.join('\n')).toBe(true);

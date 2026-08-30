@@ -19,6 +19,7 @@ sample data** on the first screen. The proofreader loads the bundled safe manife
 the audit result. **Reset demo** restores that sample. **Start for real** returns to the
 install command.
 
-The browser demo uses no storage namespace because it writes no data at all. Edited text
-exists only in the current page's memory and disappears on reload. It never reads or writes
-real CLI manifests or receipts.
+The browser demo uses no user-data storage namespace because it writes no manifest data.
+Edited text exists only in the current page's memory and disappears on reload. It never reads
+or writes real CLI manifests or receipts. The service worker separately caches the public site
+shell for offline reading, as described in the privacy policy.

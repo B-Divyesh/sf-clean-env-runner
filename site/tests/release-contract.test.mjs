@@ -26,6 +26,30 @@ test('terms page is a complete accessible static route', async () => {
   assert.match(terms, /literal secrets/i);
 });
 
+test('browser claim commands build their production site from a clean checkout', async () => {
+  const packageJson = JSON.parse(await text('../package.json'));
+  const playwright = await text('../playwright.config.js');
+  const claims = JSON.parse(await text('../.factory/claims.json'));
+  const browserClaims = claims.filter(({ id }) => ['browser-local-only', 'offline-reload'].includes(id));
+
+  assert.equal(packageJson.scripts['preview:test'], 'npm run build:site && vite preview --config site/vite.config.js');
+  assert.match(playwright, /command: 'npm run preview:test -- --host 127\.0\.0\.1 --port 4173'/);
+  assert.equal(browserClaims.length, 2);
+  for (const claim of browserClaims) {
+    assert.match(claim.test, /^npx playwright test --grep='@claim:[a-z-]+'$/);
+  }
+});
+
+test('first-screen privacy copy distinguishes user data from the offline shell cache', async () => {
+  const landing = await text('index.html');
+  const privacy = await text('privacy/index.html');
+
+  assert.match(landing, /No user data stored or analytics/);
+  assert.doesNotMatch(landing, /No browser storage/i);
+  assert.match(privacy, /service worker only to cache the site shell/i);
+  assert.match(privacy, /browser may keep that cache until you clear site data/i);
+});
+
 test('@claim:response-policy static deployment declares immutable assets and restrictive browser policies', async () => {
   const headers = await text('public/_headers');
   assert.match(headers, /\/assets\/\*[\s\S]*?Cache-Control: public, max-age=31536000, immutable/);

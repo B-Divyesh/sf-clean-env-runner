@@ -67,10 +67,11 @@ All sentences are at or below 22 words. The banned-word scan found no instances 
 ## UI labels and command text
 
 The non-sentence labels are: Clean Env Runner; Demo; Install; Reference; Privacy; Terms;
-Try it with sample data; Copy; Sample command; How it works; Declare; Preview; Run; Prove;
-Reset demo; Start for real; Sample manifest; Safe example; Empty boundary; Broken secret;
-Command reference; Manifest fields; Source & README; Back to masthead. Command and manifest
-specimens retain their literal CLI syntax.
+Explicit environment boundary; No user data stored or analytics; Try it with sample data;
+Copy; Sample command; How it works; Declare; Preview; Run; Prove; Reset demo; Start for real;
+Sample manifest; Safe example; Empty boundary; Broken secret; Command reference; Manifest
+fields; Source & README; Back to masthead. Command and manifest specimens retain their
+literal CLI syntax.
 
 ## Terminology
 

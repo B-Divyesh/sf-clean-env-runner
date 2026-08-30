@@ -4,6 +4,8 @@ All notable changes use this file. The project follows semantic versioning.
 
 ## 0.1.1 — 2026-08-30
 
+- Make browser claim commands build their production test site from a clean checkout.
+- Distinguish cached public site files from user data in the landing-page privacy copy.
 - Redact declared secret values from every receipt string field and receipt-path diagnostic.
 - Keep dependency documentation out of the packaged crate after a clean npm install.
 - Give every footer link a 44 px minimum touch target.
