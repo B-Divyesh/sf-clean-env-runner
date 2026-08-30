@@ -35,6 +35,15 @@ test('proofreader handles valid, empty, and error states by keyboard', async ({ 
 
 test('copy reports clipboard success and denied-permission recovery by keyboard', async ({ browser, baseURL }) => {
   const successContext = await browser.newContext({ permissions: ['clipboard-read', 'clipboard-write'] });
+  await successContext.addInitScript(() => {
+    const clipboard = navigator.clipboard;
+    const prototype = Object.getPrototypeOf(clipboard);
+    const writeText = prototype.writeText;
+    prototype.writeText = function instrumentedWriteText(value) {
+      globalThis.__lastClipboardWrite = value;
+      return writeText.call(this, value);
+    };
+  });
   const successPage = await successContext.newPage();
   try {
     await successPage.goto(baseURL);
@@ -44,7 +53,7 @@ test('copy reports clipboard success and denied-permission recovery by keyboard'
     await successPage.keyboard.press('Enter');
     await expect(copy).toHaveText('Copied');
     await expect(successPage.locator('#copy-status')).toHaveText('Command copied to clipboard.');
-    await expect.poll(() => successPage.evaluate(() => navigator.clipboard.readText())).toBe(
+    await expect.poll(() => successPage.evaluate(() => globalThis.__lastClipboardWrite)).toBe(
       'cargo install --git https://github.com/B-Divyesh/sf-clean-env-runner',
     );
   } finally {
